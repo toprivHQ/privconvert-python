@@ -9,7 +9,7 @@ description = "Official Python client for the PrivConvert file conversion API. F
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 authors = [{ name = "PrivConvert", email = "contact@topriv.com" }]
 keywords = ["privconvert", "file conversion", "pdf", "api", "converter", "privacy"]
 classifiers = [

@@ -3,7 +3,7 @@
 Official Python client for the [PrivConvert API](https://privconvert.com/developers/): file conversion for your app with zero data retention. Every file is processed in memory on our side and never written to disk.
 
 - No dependencies, standard library only
-- Python 3.8+
+- Python 3.10+
 - Large files (above 90 MB) are uploaded in parts automatically
 - Async jobs, webhook signature verification and typed errors included
 
