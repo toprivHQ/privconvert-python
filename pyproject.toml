@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "privconvert"
+dynamic = ["version"]
+description = "Official Python client for the PrivConvert file conversion API. Files are processed in memory and never stored."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.8"
+authors = [{ name = "PrivConvert", email = "contact@topriv.com" }]
+keywords = ["privconvert", "file conversion", "pdf", "api", "converter", "privacy"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Office/Business",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://privconvert.com/developers/"
+Documentation = "https://privconvert.com/docs/"
+Source = "https://github.com/toprivHQ/privconvert-python"
+
+[tool.hatch.version]
+path = "src/privconvert/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/privconvert"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/privconvert", "tests", "README.md", "LICENSE"]
