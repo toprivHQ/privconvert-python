@@ -24,6 +24,12 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+cloud = [
+    "boto3>=1.36",
+    "google-cloud-storage>=2.18",
+    "azure-storage-blob>=12.20",
+    "azure-identity>=1.17",
+]
 s3 = ["boto3>=1.36"]
 
 [project.urls]

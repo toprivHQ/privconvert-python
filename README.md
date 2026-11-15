@@ -2,7 +2,7 @@
 
 Official Python client for the [PrivConvert API](https://privconvert.com/developers/): file conversion for your app with zero data retention. Every file is processed in memory on our side and never written to disk.
 
-- No dependencies, standard library only (S3 support is an optional extra)
+- No dependencies, standard library only (cloud storage support is an optional extra)
 - Python 3.10+
 - Large files (above 90 MB) are uploaded in parts automatically
 - Async jobs, webhook signature verification and typed errors included
@@ -51,38 +51,50 @@ if zip_result.partial:
     print(zip_result.failed_count, "files were skipped, see PRIVCONVERT-ERRORS.txt in the ZIP")
 ```
 
-## Files in Amazon S3
+## Files in cloud storage
 
-Convert a file that lives in S3 and write the result back to S3:
-
-```bash
-pip install "privconvert[s3]"
-```
+Convert a file in Amazon S3, Google Cloud Storage or Azure Blob Storage and write the result back:
 
 ```python
-pc.convert_storage(
-    "word-to-pdf",
-    source="s3://my-bucket/input.docx",
-    destination="s3://my-bucket/output.pdf",
-)
+pc.convert_storage("word-to-pdf", "s3://my-bucket/input.docx", "s3://my-bucket/output.pdf")
+pc.convert_storage("word-to-pdf", "gs://my-bucket/input.docx", "gs://my-bucket/output.pdf")
+pc.convert_storage("word-to-pdf", "az://myaccount/my-container/input.docx", "az://myaccount/my-container/output.pdf")
 ```
 
-The file moves between your bucket and PrivConvert from wherever this code runs, using your own AWS credentials (the standard boto3 chain: environment, profile or IAM role). Your credentials are never sent to PrivConvert, and we never get access to your bucket. Run it in the same region as the bucket and the transfer is fast and cheap.
+The cloud is picked from the address. Azure also accepts the blob URL from the portal (`https://myaccount.blob.core.windows.net/my-container/input.docx`). Source and destination can be in different clouds.
+
+The file moves between your storage and PrivConvert from wherever this code runs, using your own credentials. Your credentials are never sent to PrivConvert, and we never get access to your storage. Run it in the same region as the bucket and the transfer is fast and cheap.
+
+**Credentials.** Each cloud's standard sign-in is used: for S3 the boto3 chain (environment, profile or IAM role), for Google Application Default Credentials, for Azure `AZURE_STORAGE_CONNECTION_STRING` or `DefaultAzureCredential` (managed identity, environment, Azure CLI). To control it yourself, pass `s3_client`, `gcs_client` (a `google.cloud.storage.Client`) or `azure_client` (a `BlobServiceClient`).
+
+**Libraries.** The cloud libraries you already use are picked up automatically. If one is missing, this installs all of them:
+
+```bash
+pip install "privconvert[cloud]"
+```
+
+**Backblaze B2, Cloudflare R2 and other S3-compatible storage.** Use an `s3://` address and an S3 client pointed at the provider:
 
 ```python
 import boto3
 
+b2 = boto3.client("s3", endpoint_url="https://s3.us-east-005.backblazeb2.com")
+pc.convert_storage("word-to-pdf", "s3://my-bucket/input.docx", "s3://my-bucket/output.pdf", s3_client=b2)
+```
+
+**Options.**
+
+```python
 pc.convert_storage(
     "word-to-pdf",
-    "s3://in-bucket/contract.docx",
+    "gs://in-bucket/contract.docx",
     "s3://out-bucket/contract.pdf",
-    s3_client=boto3.client("s3", region_name="eu-west-1"),
-    upload_args={"ServerSideEncryption": "aws:kms"},  # passed to put_object
+    upload_args={"ServerSideEncryption": "aws:kms"},  # passed to the destination's upload call
     overwrite=False,  # leave an existing file alone, before any credit is spent
 )
 ```
 
-Storage problems raise `StorageError`, with the provider's code in `code` (for example `NoSuchKey` or `AccessDenied`). Google Cloud Storage and Azure Blob Storage are planned.
+Storage problems raise `StorageError`, with the provider's code in `code` (for example `NoSuchKey`, `NotFound`, `BlobNotFound` or `AccessDenied`).
 
 ## Async jobs
 
@@ -133,7 +145,7 @@ Every error is a `PrivConvertError` with `status`, `code`, `message` and `retry_
 | `RateLimitError` | Per-minute rate or monthly quota exceeded (429) |
 | `ConcurrencyLimitError` | Too many conversions at once (429) |
 | `ServerError` | Problem on our side (5xx) |
-| `StorageError` | Reading from or writing to your S3 bucket failed |
+| `StorageError` | Reading from or writing to your cloud storage failed |
 
 Short 429, 502, 503 and 504 responses are retried automatically (`max_retries=2`), honouring `Retry-After`. A long `Retry-After`, which means the monthly quota is used up, raises at once instead of sleeping.
 
@@ -149,7 +161,7 @@ pc.me()
 - The key is read from `PRIVCONVERT_API_KEY` or passed explicitly, and never appears in `repr()` or error messages.
 - Requests go over HTTPS only. A plain `http://` base URL is refused.
 - This package writes nothing to disk except where you call `Result.save()`.
-- `convert_storage` keeps the file in memory between your bucket and the API. Your cloud credentials stay with you.
+- `convert_storage` keeps the file in memory between your storage and the API. Your cloud credentials stay with you.
 
 ## Links
 

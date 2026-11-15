@@ -204,32 +204,43 @@ class PrivConvert:
         destination: str,
         *,
         s3_client: Any = None,
+        gcs_client: Any = None,
+        azure_client: Any = None,
         overwrite: bool = True,
         upload_args: Optional[Mapping[str, Any]] = None,
         **params: Any,
     ) -> Result:
         """Convert a file in cloud storage and write the result back to storage.
 
-        ``source`` and ``destination`` are ``s3://bucket/key`` locations. The file
-        moves between your bucket and PrivConvert from wherever this code runs,
-        using your own AWS credentials (the standard boto3 chain, or ``s3_client``).
-        Your credentials are never sent to PrivConvert. Requires ``privconvert[s3]``.
+        Locations are ``s3://bucket/key``, ``gs://bucket/key``,
+        ``az://account/container/blob`` or
+        ``https://account.blob.core.windows.net/container/blob``. Source and
+        destination may be in different clouds. The file moves between your
+        storage and PrivConvert from wherever this code runs, using your own
+        credentials (each provider's standard chain, or the client you pass).
+        Your credentials are never sent to PrivConvert. The cloud libraries
+        are used if installed; ``pip install 'privconvert[cloud]'`` adds them.
 
-        ``upload_args`` go to ``put_object``, e.g. ``{"ServerSideEncryption": "aws:kms"}``.
-        With ``overwrite=False`` an existing destination is left untouched and
+        For S3-compatible storage such as Backblaze B2 or Cloudflare R2, pass
+        an ``s3_client`` created with that provider's ``endpoint_url``.
+
+        ``upload_args`` go to the destination's upload call (``put_object``,
+        ``Blob.upload_from_string`` or ``BlobClient.upload_blob``). With
+        ``overwrite=False`` an existing destination is left untouched and
         ``StorageError`` is raised before any credit is spent.
         """
         tool = _check_tool(tool)
         src = _storage.parse_location(source)
         dst = _storage.parse_location(destination)
-        client = s3_client if s3_client is not None else _storage.default_client()
-        if not overwrite and _storage.exists(client, dst):
+        clients = {"s3_client": s3_client, "gcs_client": gcs_client, "azure_client": azure_client}
+        reader = _storage.backend(src, **clients)
+        same = (src.provider, src.account) == (dst.provider, dst.account)
+        writer = reader if same else _storage.backend(dst, **clients)
+        if not overwrite and writer.exists(dst):
             raise StorageError(f"{dst} already exists.", code="DestinationExists")
-        data = _storage.read_object(client, src)
+        data = reader.read(src)
         result = self.convert(tool, data, filename=posixpath.basename(src.key), **params)
-        _storage.write_object(
-            client, dst, result.content, result.content_type, overwrite=overwrite, upload_args=upload_args
-        )
+        writer.write(dst, result.content, result.content_type, overwrite, upload_args or {})
         return result
 
     # ── async jobs ───────────────────────────────────────────────────────
