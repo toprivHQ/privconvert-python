@@ -101,13 +101,13 @@ Every error is a `PrivConvertError` with `status`, `code`, `message` and `retry_
 | `ConcurrencyLimitError` | Too many conversions at once (429) |
 | `ServerError` | Problem on our side (5xx) |
 
-Short 429 and 503 responses are retried automatically (`max_retries=2`), honouring `Retry-After`. A long `Retry-After`, which means the monthly quota is used up, raises at once instead of sleeping.
+Short 429, 502, 503 and 504 responses are retried automatically (`max_retries=2`), honouring `Retry-After`. A long `Retry-After`, which means the monthly quota is used up, raises at once instead of sleeping.
 
 ## Usage and limits
 
 ```python
 pc.me()
-# {'tier': 'growth', 'quota': 50000, 'used': 1234, 'remaining': 48766, 'rpm': 120, ...}
+# {'tier': 'growth', 'quota': 25000, 'used': 1234, 'remaining': 23766, 'rpm': 120, ...}
 ```
 
 ## Security notes
