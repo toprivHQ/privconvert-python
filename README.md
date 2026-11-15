@@ -73,7 +73,39 @@ The file moves between your storage and PrivConvert from wherever this code runs
 pip install "privconvert[cloud]"
 ```
 
-**Backblaze B2, Cloudflare R2 and other S3-compatible storage.** Use an `s3://` address and an S3 client pointed at the provider:
+**Cloudflare R2, Backblaze B2 and other S3-compatible storage.** Use an `s3://` address and an S3 client pointed at the provider.
+
+### Cloudflare R2
+
+Convert files in an R2 bucket and write the result back to R2. Create an R2 API token with read and write access to the bucket, and use your Cloudflare account ID in the endpoint:
+
+```python
+import os
+
+import boto3
+from privconvert import PrivConvert
+
+r2 = boto3.client(
+    "s3",
+    endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com",
+    aws_access_key_id=os.environ["R2_ACCESS_KEY_ID"],
+    aws_secret_access_key=os.environ["R2_SECRET_ACCESS_KEY"],
+    region_name="auto",
+)
+
+pc = PrivConvert()
+pc.convert_storage(
+    "word-to-pdf",
+    "s3://my-bucket/contracts/input.docx",
+    "s3://my-bucket/contracts/output.pdf",
+    s3_client=r2,
+    overwrite=False,
+)
+```
+
+The file goes from R2 to PrivConvert and back from wherever this code runs. Your R2 keys stay with you.
+
+### Backblaze B2
 
 ```python
 import boto3
@@ -82,7 +114,7 @@ b2 = boto3.client("s3", endpoint_url="https://s3.us-east-005.backblazeb2.com")
 pc.convert_storage("word-to-pdf", "s3://my-bucket/input.docx", "s3://my-bucket/output.pdf", s3_client=b2)
 ```
 
-**Options.**
+### Options
 
 ```python
 pc.convert_storage(

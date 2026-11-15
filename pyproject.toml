@@ -11,7 +11,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "PrivConvert", email = "contact@topriv.com" }]
-keywords = ["privconvert", "file conversion", "pdf", "api", "converter", "privacy"]
+keywords = ["privconvert", "file conversion", "pdf", "api", "converter", "privacy", "s3", "google cloud storage", "azure blob storage", "cloudflare r2", "backblaze b2"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
