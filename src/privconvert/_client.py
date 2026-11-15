@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import posixpath
 import re
 import secrets
 import time
@@ -11,7 +12,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import IO, Any, Dict, Iterable, List, Mapping, Optional, Tuple, Union
 
-from ._errors import PrivConvertError, error_for
+from . import _storage
+from ._errors import PrivConvertError, StorageError, error_for
 from ._version import __version__
 
 DEFAULT_BASE_URL = "https://privconvert.com/api"
@@ -194,6 +196,41 @@ class PrivConvert:
             raise PrivConvertError("convert_batch takes at most 20 files per request.")
         fields = [("tool", tool)] + _form_params(params)
         return self._request_file("POST", "/convert-batch", fields=fields, files=parts)
+
+    def convert_storage(
+        self,
+        tool: str,
+        source: str,
+        destination: str,
+        *,
+        s3_client: Any = None,
+        overwrite: bool = True,
+        upload_args: Optional[Mapping[str, Any]] = None,
+        **params: Any,
+    ) -> Result:
+        """Convert a file in cloud storage and write the result back to storage.
+
+        ``source`` and ``destination`` are ``s3://bucket/key`` locations. The file
+        moves between your bucket and PrivConvert from wherever this code runs,
+        using your own AWS credentials (the standard boto3 chain, or ``s3_client``).
+        Your credentials are never sent to PrivConvert. Requires ``privconvert[s3]``.
+
+        ``upload_args`` go to ``put_object``, e.g. ``{"ServerSideEncryption": "aws:kms"}``.
+        With ``overwrite=False`` an existing destination is left untouched and
+        ``StorageError`` is raised before any credit is spent.
+        """
+        tool = _check_tool(tool)
+        src = _storage.parse_location(source)
+        dst = _storage.parse_location(destination)
+        client = s3_client if s3_client is not None else _storage.default_client()
+        if not overwrite and _storage.exists(client, dst):
+            raise StorageError(f"{dst} already exists.", code="DestinationExists")
+        data = _storage.read_object(client, src)
+        result = self.convert(tool, data, filename=posixpath.basename(src.key), **params)
+        _storage.write_object(
+            client, dst, result.content, result.content_type, overwrite=overwrite, upload_args=upload_args
+        )
+        return result
 
     # ── async jobs ───────────────────────────────────────────────────────
 

@@ -23,6 +23,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.optional-dependencies]
+s3 = ["boto3>=1.36"]
+
 [project.urls]
 Homepage = "https://privconvert.com/developers/"
 Documentation = "https://privconvert.com/docs/"

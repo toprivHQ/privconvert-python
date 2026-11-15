@@ -106,7 +106,13 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/api/convert/conc":
             return self._reply(429, {"error": {"code": "concurrency_limited", "message": "slow"}}, {"Retry-After": "0"})
         return self._reply(
-            200, b"%PDF-1.4", {"Content-Disposition": 'attachment; filename="x.pdf"', "X-Credits-Remaining": "41"}
+            200,
+            b"%PDF-1.4",
+            {
+                "Content-Disposition": 'attachment; filename="x.pdf"',
+                "Content-Type": "application/pdf",
+                "X-Credits-Remaining": "41",
+            },
         )
 
 

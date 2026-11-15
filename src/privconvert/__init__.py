@@ -19,6 +19,7 @@ from ._errors import (
     ServerError,
     JobExpiredError,
     JobNotFoundError,
+    StorageError,
 )
 from ._webhooks import verify_webhook, WebhookVerificationError
 from ._version import __version__
@@ -39,6 +40,7 @@ __all__ = [
     "ServerError",
     "JobExpiredError",
     "JobNotFoundError",
+    "StorageError",
     "verify_webhook",
     "WebhookVerificationError",
     "__version__",
